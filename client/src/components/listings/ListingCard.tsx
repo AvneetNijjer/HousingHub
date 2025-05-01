@@ -50,26 +50,26 @@ const ListingCard = ({ listing, index }: ListingCardProps) => {
   // Find landlord for this listing if landlordId is available
   const landlord = listing.landlordId ? landlords.find(l => l.id === listing.landlordId) : null;
   
-  const toggleFavorite = (e: React.MouseEvent) => {
+  const toggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (isFavorite(listing.id)) {
-      removeFavorite(listing.id);
+      await removeFavorite(listing.id);
     } else {
-      addFavorite(listing);
+      await addFavorite(listing);
     }
   };
   
-  const handleSaveNote = () => {
-    addNoteToFavorite(listing.id, noteText);
+  const handleSaveNote = async () => {
+    await addNoteToFavorite(listing.id, noteText);
     setIsEditingNote(false);
   };
   
-  const handleCreateCollection = () => {
+  const handleCreateCollection = async () => {
     if (newCollectionName.trim()) {
-      createCollection(newCollectionName);
-      addToCollection(newCollectionName, listing);
+      await createCollection(newCollectionName);
+      await addToCollection(newCollectionName, listing);
       setNewCollectionName('');
     }
   };
@@ -611,7 +611,7 @@ const ListingCard = ({ listing, index }: ListingCardProps) => {
                       <div className="flex flex-wrap gap-2 mb-3">
                         {Object.keys(collections).length > 0 ? (
                           Object.entries(collections).map(([name, listings]) => (
-                            listings.some(item => item.id === listing.id) && (
+                            listings.some((item: Listing) => item.id === listing.id) && (
                               <div key={name} className="bg-primary-100 text-primary-800 rounded-full px-3 py-1 text-sm flex items-center">
                                 <i className="fas fa-folder-open mr-1.5"></i>
                                 {name}

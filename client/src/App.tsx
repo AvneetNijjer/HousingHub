@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import { useState, useEffect } from "react";
 import { FavoritesProvider } from "@/hooks/use-favorites";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 // Import pages
 import Home from "@/pages/Home";
@@ -37,8 +37,9 @@ function Router() {
   );
 }
 
-function App() {
+function AppContent() {
   const [scrollY, setScrollY] = useState(0);
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,18 +53,24 @@ function App() {
   }, []);
 
   return (
+    <FavoritesProvider userId={user?.id ?? ''}>
+      <div className="min-h-screen flex flex-col">
+        <NavBar scrollY={scrollY} />
+        <main className="flex-grow">
+          <Router />
+        </main>
+        <Footer />
+      </div>
+      <Toaster />
+    </FavoritesProvider>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <FavoritesProvider>
-          <div className="min-h-screen flex flex-col">
-            <NavBar scrollY={scrollY} />
-            <main className="flex-grow">
-              <Router />
-            </main>
-            <Footer />
-          </div>
-          <Toaster />
-        </FavoritesProvider>
+        <AppContent />
       </AuthProvider>
     </QueryClientProvider>
   );
