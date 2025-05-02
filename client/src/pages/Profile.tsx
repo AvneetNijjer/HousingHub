@@ -8,16 +8,36 @@ import { useFavorites } from '@/hooks/use-favorites';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Listing } from '@/lib/data';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface UserPreferences {
+  maxRent: number;
+  housingType: string[];
+  bedrooms: string;
+  lookingFor: string;
+  roommates: boolean;
+}
+
+interface UserData {
+  name: string;
+  email: string;
+  university: string;
+  graduationYear: string;
+  profileImage: string;
+  joinDate: string;
+  preferences: UserPreferences;
+}
 
 const Profile = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('saved');
   const [newCollectionName, setNewCollectionName] = useState('');
   const [isCreateCollectionOpen, setIsCreateCollectionOpen] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
 
   const { 
-    favorites, 
-    collections, 
+    favorites = [],
+    collections = [],
     removeFavorite, 
     createCollection,
     addToCollection,
@@ -28,14 +48,16 @@ const Profile = () => {
   // Use favorites instead of mock data
   const recentlyViewed = listings.slice(3, 6);
   
-  // Mock user data
-  const user = {
-    name: 'Alex Johnson',
-    email: 'alex.johnson@example.edu',
+  // Use actual user data if available, otherwise use mock data
+  const userData: UserData = {
+    name: user?.email?.split('@')[0] || 'Guest User',
+    email: user?.email || 'Not signed in',
     university: 'State University',
     graduationYear: '2025',
     profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80',
-    joinDate: 'January 2023',
+    joinDate: user?.created_at 
+      ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      : new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
     preferences: {
       maxRent: 1000,
       housingType: ['Apartment', 'House'],
@@ -115,16 +137,16 @@ const Profile = () => {
                   <div className="relative">
                     <div className="w-20 h-20 rounded-full border-4 border-white overflow-hidden">
                       <img 
-                        src={user.profileImage} 
-                        alt={user.name} 
+                        src={userData.profileImage} 
+                        alt={userData.name} 
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="absolute bottom-0 right-0 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
                   </div>
                   <div className="ml-4">
-                    <h2 className="text-xl font-bold">{user.name}</h2>
-                    <p className="text-primary-100">{user.university} • {user.graduationYear}</p>
+                    <h2 className="text-xl font-bold">{userData.name}</h2>
+                    <p className="text-primary-100">{userData.university} • {userData.graduationYear}</p>
                   </div>
                 </div>
               </div>
@@ -136,11 +158,11 @@ const Profile = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Email</span>
-                      <span className="text-gray-900 font-medium">{user.email}</span>
+                      <span className="text-gray-900 font-medium">{userData.email}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Member Since</span>
-                      <span className="text-gray-900 font-medium">{user.joinDate}</span>
+                      <span className="text-gray-900 font-medium">{userData.joinDate}</span>
                     </div>
                   </div>
                 </div>
@@ -150,23 +172,23 @@ const Profile = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Max Rent</span>
-                      <span className="text-gray-900 font-medium">${user.preferences.maxRent}/month</span>
+                      <span className="text-gray-900 font-medium">${userData.preferences.maxRent}/month</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Housing Type</span>
-                      <span className="text-gray-900 font-medium">{user.preferences.housingType.join(', ')}</span>
+                      <span className="text-gray-900 font-medium">{userData.preferences.housingType.join(', ')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Bedrooms</span>
-                      <span className="text-gray-900 font-medium">{user.preferences.bedrooms}</span>
+                      <span className="text-gray-900 font-medium">{userData.preferences.bedrooms}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Looking For</span>
-                      <span className="text-gray-900 font-medium">{user.preferences.lookingFor}</span>
+                      <span className="text-gray-900 font-medium">{userData.preferences.lookingFor}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Roommates</span>
-                      <span className="text-gray-900 font-medium">{user.preferences.roommates ? 'Yes' : 'No'}</span>
+                      <span className="text-gray-900 font-medium">{userData.preferences.roommates ? 'Yes' : 'No'}</span>
                     </div>
                   </div>
                 </div>
@@ -211,13 +233,15 @@ const Profile = () => {
                 
                 <TabsContent value="saved" className="p-6">
                   <div className="mb-4 flex justify-between items-center">
-                    <h2 className="text-lg font-semibold text-gray-900">Saved Listings ({favorites.length})</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Saved Listings ({favorites?.length || 0})
+                    </h2>
                     <Button variant="outline" size="sm">
                       <i className="fas fa-sort-amount-down mr-2"></i> Sort
                     </Button>
                   </div>
                   
-                  {favorites.length > 0 ? (
+                  {favorites?.length > 0 ? (
                     <motion.div 
                       className="space-y-4"
                       variants={containerVariants}
@@ -298,14 +322,16 @@ const Profile = () => {
                       ))}
                     </motion.div>
                   ) : (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                        <i className="fas fa-heart text-gray-400 text-2xl"></i>
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 mb-2">
+                        <i className="fas fa-heart text-4xl"></i>
                       </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No saved listings yet</h3>
-                      <p className="text-gray-500 mb-6">When you find a place you like, click the heart icon to save it for later.</p>
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">No saved listings yet</h3>
+                      <p className="text-gray-500 mb-4">Start browsing and save your favorite properties</p>
                       <Link href="/listings">
-                        <Button>Browse Listings</Button>
+                        <Button>
+                          <i className="fas fa-search mr-2"></i> Browse Listings
+                        </Button>
                       </Link>
                     </div>
                   )}

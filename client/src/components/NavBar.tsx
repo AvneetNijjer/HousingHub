@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavBarProps {
   scrollY: number;
 }
 
 const NavBar = ({ scrollY }: NavBarProps) => {
+  const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -135,7 +137,7 @@ const NavBar = ({ scrollY }: NavBarProps) => {
                   <div className="relative">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-300"></div>
                     <div className="relative w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                      <img src="/src/assets/logo.svg" alt="LetMeKnock Logo" className="w-9 h-9" />
+                      <img src="/src/assets/logo.svg" alt="HouseHunterHub Logo" className="w-8 h-8" />
                     </div>
                   </div>
                   <motion.span 
@@ -178,24 +180,35 @@ const NavBar = ({ scrollY }: NavBarProps) => {
                 animate={isLoaded ? "visible" : "hidden"}
                 className="flex space-x-2"
               >
-                <Link href="/profile">
-                  <div className="relative">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400 to-primary-500 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-primary-200 hover:bg-primary-50 transition-all duration-300 shadow-sm cursor-pointer text-primary-700 relative group">
-                      <i className="fas fa-user-circle text-lg group-hover:scale-110 transition-transform duration-300"></i>
-                      <div className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white transform scale-0 group-hover:scale-100 transition-transform duration-300"></div>
+                {user && (
+                  <Link href="/profile">
+                    <div className="relative">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400 to-primary-500 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-primary-200 hover:bg-primary-50 transition-all duration-300 shadow-sm cursor-pointer text-primary-700 relative group overflow-hidden">
+                        <img src="/src/assets/user-icon.svg" alt="User Profile" className="w-6 h-6" />
+                        <div className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white transform scale-0 group-hover:scale-100 transition-transform duration-300"></div>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                )}
                 
-                <Link href="/signin">
-                  <div className="relative group">
+                {user ? (
+                  <button onClick={() => signOut()} className="relative group">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
                     <div className="relative font-medium text-primary-800 bg-white hover:bg-gray-50 px-5 py-2 rounded-full transition-colors shadow-lg cursor-pointer flex items-center">
-                      <i className="fas fa-sign-in-alt mr-2"></i> Sign In
+                      <i className="fas fa-sign-out-alt mr-2"></i> Sign Out
                     </div>
-                  </div>
-                </Link>
+                  </button>
+                ) : (
+                  <Link href="/signin">
+                    <div className="relative group">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+                      <div className="relative font-medium text-primary-800 bg-white hover:bg-gray-50 px-5 py-2 rounded-full transition-colors shadow-lg cursor-pointer flex items-center">
+                        <i className="fas fa-sign-in-alt mr-2"></i> Sign In
+                      </div>
+                    </div>
+                  </Link>
+                )}
               </motion.div>
               
               <motion.button 
