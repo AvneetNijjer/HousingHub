@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import logo from '@/assets/logo.svg';
 
 interface NavBarProps {
   scrollY: number;
@@ -137,7 +138,7 @@ const NavBar = ({ scrollY }: NavBarProps) => {
                   <div className="relative">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-300"></div>
                     <div className="relative w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                      <img src="/src/assets/logo.svg" alt="HouseHunterHub Logo" className="w-6 h-6 opacity-85" />
+                      <img src={logo} alt="HouseHunterHub Logo" className="w-6 h-6 opacity-85" />
                     </div>
                   </div>
                   <motion.span 

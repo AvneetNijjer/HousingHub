@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
+import logo from '@/assets/logo.svg';
 
 const SignUp = () => {
   const [name, setName] = useState('');
@@ -27,7 +28,7 @@ const SignUp = () => {
         >
           <div className="px-6 pt-8 pb-6 border-b border-gray-100">
             <div className="flex justify-center mb-6">
-              <img src="/src/assets/logo.svg" alt="LetMeKnock Logo" className="w-16 h-16" />
+              <img src={logo} alt="LetMeKnock Logo" className="w-16 h-16" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 text-center">Create your account</h1>
             <p className="text-gray-600 text-center mt-1">Join LetMeKnock to find your perfect student housing</p>
