@@ -101,18 +101,18 @@ const NavBar = ({ scrollY }: NavBarProps) => {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
+    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center">
       <motion.nav 
-        className={`transition-all duration-500 overflow-hidden mx-4 lg:mx-8 my-4 rounded-2xl`}
+        className={`transition-all duration-500 overflow-hidden mx-8 lg:mx-16 my-4 rounded-full max-w-4xl mx-auto w-[calc(100%+1px)]`}
         style={{
           backdropFilter: getBlurIntensity()
         }}
       >
         {/* Dynamic navbar background */}
         <div 
-          className={`absolute inset-0 transition-all duration-500 rounded-2xl border border-white/10`}
+          className={`absolute inset-0 transition-all duration-500 rounded-full border border-white/10`}
           style={{
-            background: `linear-gradient(to right, rgba(26, 32, 77, 0.8), rgba(59, 66, 113, 0.8))`,
+            background: `linear-gradient(to right, rgba(26, 32, 77, 0.65), rgba(59, 66, 113, 0.65))`,
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)'
           }}
         />
@@ -123,7 +123,7 @@ const NavBar = ({ scrollY }: NavBarProps) => {
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
         </div>
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-2 lg:px-4">
           <div className="flex justify-between h-16 items-center">
             {/* Logo */}
             <motion.div 
@@ -137,7 +137,7 @@ const NavBar = ({ scrollY }: NavBarProps) => {
                   <div className="relative">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-300"></div>
                     <div className="relative w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                      <img src="/src/assets/logo.svg" alt="HouseHunterHub Logo" className="w-8 h-8" />
+                      <img src="/src/assets/logo.svg" alt="HouseHunterHub Logo" className="w-6 h-6 opacity-85" />
                     </div>
                   </div>
                   <motion.span 
