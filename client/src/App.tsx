@@ -1,27 +1,38 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import NotFound from "@/pages/not-found";
-import { useState, useEffect } from "react";
-import { FavoritesProvider } from "@/hooks/use-favorites";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import React from 'react';
+import { Switch, Route } from 'wouter';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
+import { FavoritesProvider } from './hooks/use-favorites';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Import pages
-import Home from "@/pages/Home";
-import Listings from "@/pages/Listings";
-import GuidelinesAndFAQ from "@/pages/GuidelinesAndFAQ";
-import About from "@/pages/About";
-import Map from "@/pages/Map";
-import SignIn from "@/pages/SignIn";
-import SignUp from "@/pages/SignUp";
-import Profile from "@/pages/Profile";
+import Home from './pages/Home';
+import Listings from './pages/Listings';
+import GuidelinesAndFAQ from './pages/GuidelinesAndFAQ';
+import About from './pages/About';
+import Map from './pages/Map';
+import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
+import Profile from './pages/Profile';
+import MyListings from './pages/MyListings';
+import CreateListing from './pages/CreateListing';
+import EditListing from './pages/EditListing';
+import NotFound from './pages/not-found';
 
 // Import components
-import NavBar from "@/components/NavBar";
-import Footer from "@/components/Footer";
+import NavBar from './components/NavBar';
+import Footer from './components/Footer';
 
-function Router() {
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
+
+const Router: React.FC = () => {
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -32,23 +43,26 @@ function Router() {
       <Route path="/signin" component={SignIn} />
       <Route path="/signup" component={SignUp} />
       <Route path="/profile" component={Profile} />
+      <Route path="/profile/my-listings" component={MyListings} />
+      <Route path="/create-listing" component={CreateListing} />
+      <Route path="/edit-listing/:id" component={EditListing} />
       <Route component={NotFound} />
     </Switch>
   );
-}
+};
 
-function AppContent() {
-  const [scrollY, setScrollY] = useState(0);
+const AppContent: React.FC = () => {
+  const [scrollY, setScrollY] = React.useState(0);
   const { user } = useAuth();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -64,9 +78,9 @@ function AppContent() {
       <Toaster />
     </FavoritesProvider>
   );
-}
+};
 
-function App() {
+const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -74,6 +88,6 @@ function App() {
       </AuthProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

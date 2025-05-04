@@ -1,19 +1,22 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '@/contexts/AuthContext';
-import logo from '@/assets/logo.svg';
+import { useAuth } from '../contexts/AuthContext';
+import logo from '../assets/logo.svg';
+import userIcon from '../assets/user-icon.svg';
 
 interface NavBarProps {
   scrollY: number;
 }
 
-const NavBar = ({ scrollY }: NavBarProps) => {
+const NavBar: React.FC<NavBarProps> = ({ scrollY }) => {
   const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   
   // Calculate blur intensity based on scroll
   const getBlurIntensity = () => {
@@ -81,13 +84,27 @@ const NavBar = ({ scrollY }: NavBarProps) => {
     return () => clearTimeout(timer);
   }, []);
   
+  // Add click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
   const isActive = (path: string) => location === path;
   
   // Helper function to get nav item style based on active state
   const getNavItemStyle = (path: string) => {
     const baseStyle = "font-medium transition-all duration-300 px-4 py-2 rounded-full cursor-pointer";
-    const activeStyle = "bg-white/15 text-white backdrop-blur-sm shadow-inner";
-    const inactiveStyle = "text-white/80 hover:bg-white/10 hover:text-white";
+    const activeStyle = "bg-white/20 text-white backdrop-blur-sm shadow-inner";
+    const inactiveStyle = "text-white hover:bg-white/20 hover:text-white";
     
     return `${baseStyle} ${isActive(path) ? activeStyle : inactiveStyle}`;
   };
@@ -104,14 +121,14 @@ const NavBar = ({ scrollY }: NavBarProps) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center">
       <motion.nav 
-        className={`transition-all duration-500 overflow-hidden mx-8 lg:mx-16 my-4 rounded-full max-w-4xl mx-auto w-[calc(100%+1px)]`}
+        className="transition-all duration-500 overflow-hidden mx-8 lg:mx-16 my-4 rounded-full max-w-4xl mx-auto w-[calc(100%+1px)]"
         style={{
           backdropFilter: getBlurIntensity()
         }}
       >
         {/* Dynamic navbar background */}
         <div 
-          className={`absolute inset-0 transition-all duration-500 rounded-full border border-white/10`}
+          className="absolute inset-0 transition-all duration-500 rounded-full border border-white/10"
           style={{
             background: `linear-gradient(to right, rgba(26, 32, 77, 0.65), rgba(59, 66, 113, 0.65))`,
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)'
@@ -164,7 +181,7 @@ const NavBar = ({ scrollY }: NavBarProps) => {
                   animate={isLoaded ? "visible" : "hidden"}
                 >
                   <Link href={item.path}>
-                    <div className={getNavItemStyle(item.path)}>
+                    <div className={`${getNavItemStyle(item.path)} ${item.label === 'Listings' ? 'bg-white/20 hover:bg-white/30' : ''}`}>
                       <i className={`fas ${item.icon} mr-2`}></i> {item.label}
                     </div>
                   </Link>
@@ -172,7 +189,7 @@ const NavBar = ({ scrollY }: NavBarProps) => {
               ))}
             </div>
             
-            {/* Combined Sign In/Up Button & Mobile Menu Button */}
+            {/* Auth Buttons */}
             <div className="flex items-center space-x-3">
               <motion.div
                 variants={buttonVariants}
@@ -181,30 +198,18 @@ const NavBar = ({ scrollY }: NavBarProps) => {
                 animate={isLoaded ? "visible" : "hidden"}
                 className="flex space-x-2"
               >
-                {user && (
+                {user ? (
                   <Link href="/profile">
-                    <div className="relative">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400 to-primary-500 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-primary-200 hover:bg-primary-50 transition-all duration-300 shadow-sm cursor-pointer text-primary-700 relative group overflow-hidden">
-                        <img src="/src/assets/user-icon.svg" alt="User Profile" className="w-6 h-6" />
-                        <div className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white transform scale-0 group-hover:scale-100 transition-transform duration-300"></div>
-                      </div>
+                    <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 px-3 py-2 rounded-full text-white transition-all duration-300 cursor-pointer">
+                      <img src={userIcon} alt="User Profile" className="w-6 h-6" />
+                      <span className="text-sm font-medium">{user.email?.split('@')[0]}</span>
                     </div>
                   </Link>
-                )}
-                
-                {user ? (
-                  <button onClick={() => signOut()} className="relative group">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-                    <div className="relative font-medium text-primary-800 bg-white hover:bg-gray-50 px-5 py-2 rounded-full transition-colors shadow-lg cursor-pointer flex items-center">
-                      <i className="fas fa-sign-out-alt mr-2"></i> Sign Out
-                    </div>
-                  </button>
                 ) : (
                   <Link href="/signin">
                     <div className="relative group">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-                      <div className="relative font-medium text-primary-800 bg-white hover:bg-gray-50 px-5 py-2 rounded-full transition-colors shadow-lg cursor-pointer flex items-center">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-300"></div>
+                      <div className="relative font-medium text-white bg-white/20 backdrop-blur-sm hover:bg-white/30 px-5 py-2 rounded-full transition-colors shadow-lg cursor-pointer flex items-center">
                         <i className="fas fa-sign-in-alt mr-2"></i> Sign In
                       </div>
                     </div>
@@ -212,83 +217,63 @@ const NavBar = ({ scrollY }: NavBarProps) => {
                 )}
               </motion.div>
               
-              <motion.button 
-                className="md:hidden text-white focus:outline-none relative z-20" 
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                whileTap={{ scale: 0.95 }}
+              {/* Mobile menu button */}
+              <motion.button
                 variants={buttonVariants}
                 custom={1}
                 initial="hidden"
                 animate={isLoaded ? "visible" : "hidden"}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden relative group"
               >
-                <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20">
-                  <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'} text-lg`}></i>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-white/20 to-white/10 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
+                <div className="relative w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg cursor-pointer text-white">
+                  <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
                 </div>
               </motion.button>
             </div>
           </div>
         </div>
         
-        {/* Mobile menu with improved animation */}
+        {/* Mobile menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div 
-              className="md:hidden relative z-10"
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
+              animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ 
-                opacity: { duration: 0.2 },
-                height: { duration: 0.3 }
-              }}
+              transition={{ duration: 0.3 }}
+              className="md:hidden"
             >
-              <motion.div 
-                className="bg-gray-900/95 backdrop-blur-md p-4 mx-4 rounded-2xl shadow-2xl border border-white/10 my-2"
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <div className="flex flex-col space-y-1 divide-y divide-white/5">
-                  {navigationItems.map((item, index) => (
-                    <motion.div 
-                      key={item.path}
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.1 + index * 0.05, duration: 0.3 }}
-                      className={index === 0 ? "" : "pt-1"}
-                    >
-                      <Link href={item.path}>
-                        <div className={`font-medium ${
-                          isActive(item.path) 
-                            ? 'bg-blue-500/20 text-white border-l-2 border-blue-500' 
-                            : 'text-white/70 border-l-2 border-transparent'} 
-                            hover:bg-blue-500/10 hover:text-white px-4 py-3 rounded-xl cursor-pointer transition-all`
-                        }>
-                          <i className={`fas ${item.icon} mr-3 text-blue-400`}></i> {item.label}
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
-                  
-                  <div className="pt-4 pb-1">
-                    <motion.div
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.3, duration: 0.3 }}
-                      className="w-full"
-                    >
-                      <Link href="/signin">
-                        <div className="relative group">
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur opacity-50 group-hover:opacity-75 transition duration-300"></div>
-                          <div className="relative font-medium text-white bg-primary-700 hover:bg-primary-600 py-3 rounded-xl cursor-pointer transition-colors shadow w-full text-center flex items-center justify-center">
-                            <i className="fas fa-sign-in-alt mr-2"></i> Sign In
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  </div>
-                </div>
-              </motion.div>
+              <div className="px-2 pt-2 pb-3 space-y-1">
+                {navigationItems.map((item, index) => (
+                  <motion.div
+                    key={item.path}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Link href={item.path}>
+                      <div className={`${getNavItemStyle(item.path)} ${item.label === 'Listings' ? 'bg-white/20 hover:bg-white/30' : ''}`}>
+                        <i className={`fas ${item.icon} mr-2`}></i> {item.label}
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+                {!user && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: navigationItems.length * 0.1 }}
+                  >
+                    <Link href="/signin">
+                      <div className="block px-3 py-2 text-white/80 hover:bg-white/10 hover:text-white rounded-full">
+                        <i className="fas fa-sign-in-alt mr-2"></i> Sign In
+                      </div>
+                    </Link>
+                  </motion.div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

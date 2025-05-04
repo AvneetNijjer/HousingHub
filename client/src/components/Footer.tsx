@@ -1,6 +1,7 @@
+import React from 'react';
 import { Link } from 'wouter';
 
-const Footer = () => {
+const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-900 text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -57,7 +58,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/guidelines">
+                <Link href="/resources">
                   <div className="text-gray-400 hover:text-white transition-colors cursor-pointer">Guidelines</div>
                 </Link>
               </li>
@@ -69,7 +70,7 @@ const Footer = () => {
             <h3 className="font-semibold text-lg mb-6">Resources</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/about">
+                <Link href="/resources">
                   <div className="text-gray-400 hover:text-white transition-colors cursor-pointer">FAQ</div>
                 </Link>
               </li>

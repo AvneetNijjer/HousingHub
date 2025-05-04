@@ -126,11 +126,11 @@ const HeroSection = () => {
           alt="Student apartment building"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-900/70 via-primary-800/70 to-primary-900/80 backdrop-blur-[2px]"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/40"></div>
 
         {/* Animated floating shapes */}
         <motion.div 
-          className="absolute top-[20%] right-[15%] w-32 h-32 rounded-full bg-blue-500/10 backdrop-blur-md border border-blue-500/30"
+          className="absolute top-[20%] right-[15%] w-32 h-32 rounded-full bg-white/5 backdrop-blur-md border border-white/10"
           animate={{ 
             y: [0, -30, 0], 
             rotate: [0, 5, 0],
@@ -144,7 +144,7 @@ const HeroSection = () => {
         />
 
         <motion.div 
-          className="absolute top-[60%] left-[10%] w-24 h-24 rounded-full bg-purple-500/10 backdrop-blur-md border border-purple-500/30"
+          className="absolute top-[60%] left-[10%] w-24 h-24 rounded-full bg-white/5 backdrop-blur-md border border-white/10"
           animate={{ 
             y: [0, 20, 0], 
             x: [0, -10, 0],
@@ -171,7 +171,7 @@ const HeroSection = () => {
             style={{ y: textY }}
           >
             <motion.span 
-              className="inline-block bg-blue-500/20 text-blue-100 backdrop-blur-sm py-1 px-3 rounded-full text-sm font-medium mb-4"
+              className="inline-block bg-white/10 text-white backdrop-blur-sm py-1 px-3 rounded-full text-sm font-medium mb-4"
               variants={heading}
             >
               Student Housing Made Simple
@@ -181,7 +181,7 @@ const HeroSection = () => {
               className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight tracking-tight"
               variants={heading}
             >
-              Find Your Perfect <span className="text-blue-300">Student Home</span>
+              Find Your Perfect <span className="text-white">Student Home</span>
             </motion.h1>
             
             <motion.p 
@@ -199,173 +199,59 @@ const HeroSection = () => {
             >
               <motion.div variants={buttonItem}>
                 <Link href="/listings">
-                  <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full blur opacity-60 group-hover:opacity-90 transition duration-300"></div>
-                    <button className="relative px-8 py-4 bg-white text-primary-800 rounded-full font-medium group-hover:text-primary-900 transition-colors shadow-xl flex items-center">
-                      <i className="fas fa-home mr-2"></i> Browse Listings
-                    </button>
+                  <div className="px-8 py-4 bg-white text-gray-900 rounded-full font-medium hover:bg-gray-100 transition-colors shadow-lg cursor-pointer">
+                    Browse Listings
                   </div>
                 </Link>
               </motion.div>
-              
               <motion.div variants={buttonItem}>
-                <Link href="/map">
-                  <div className="px-8 py-4 border-2 border-white/30 backdrop-blur-sm bg-white/10 text-white rounded-full font-medium hover:bg-white/20 transition-colors shadow-xl flex items-center">
-                    <i className="fas fa-map-marked-alt mr-2"></i> View Map
+                <Link href="/about">
+                  <div className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white border border-white/20 rounded-full font-medium hover:bg-white/20 transition-colors shadow-lg cursor-pointer">
+                    Learn More
                   </div>
                 </Link>
               </motion.div>
-            </motion.div>
-            
-            <motion.div 
-              className="flex items-center space-x-4 text-white/80 text-sm"
-              variants={description}
-            >
-              <div className="flex items-center">
-                <i className="fas fa-check-circle text-blue-400 mr-2"></i>
-                <span>Verified Listings</span>
-              </div>
-              <div className="flex items-center">
-                <i className="fas fa-university text-blue-400 mr-2"></i>
-                <span>Campus Proximity</span>
-              </div>
-              <div className="flex items-center">
-                <i className="fas fa-shield-alt text-blue-400 mr-2"></i>
-                <span>Secure Platform</span>
-              </div>
             </motion.div>
           </motion.div>
-          
-          {/* Floating card preview */}
-          <motion.div
+
+          {/* Floating card */}
+          <motion.div 
             className="hidden lg:block"
             variants={floatingCard}
             initial="hidden"
             animate={isLoaded ? "visible" : "hidden"}
           >
             <div className="relative">
-              {/* Decorative elements */}
-              <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-full blur-2xl"></div>
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-gradient-to-br from-purple-400/20 to-blue-500/20 rounded-full blur-2xl"></div>
-              
-              {/* Card */}
-              <div className="relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 shadow-2xl overflow-hidden">
-                <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-blue-500/30 rounded-full blur-xl"></div>
-                
-                <div className="relative">
-                  {/* Header */}
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                        <i className="fas fa-home"></i>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-white">Featured Listing</h3>
-                        <p className="text-xs text-white/70">Premium verified property</p>
-                      </div>
-                    </div>
-                    <div className="bg-blue-500/20 backdrop-blur-sm text-white text-xs font-medium rounded-full px-3 py-1">
-                      <i className="fas fa-star mr-1 text-yellow-300"></i> Top Rated
-                    </div>
+              <div className="absolute -inset-4 bg-gradient-to-r from-white/20 to-white/10 rounded-2xl blur-xl opacity-30"></div>
+              <div className="relative bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4">
+                    <i className="fas fa-home text-white text-xl"></i>
                   </div>
-                  
-                  {/* Image */}
-                  <div className="relative mb-4 rounded-xl overflow-hidden h-40">
-                    <img 
-                      src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                      alt="Luxury apartment"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 left-3 bg-primary-800/90 text-white text-xs font-medium rounded-full px-3 py-1">
-                      Apartment
-                    </div>
-                    <div className="absolute top-3 right-3 bg-white rounded-full p-2 shadow-lg">
-                      <i className="far fa-heart text-primary-800"></i>
-                    </div>
+                  <div>
+                    <h3 className="text-white font-semibold">Student Housing</h3>
+                    <p className="text-white/70 text-sm">Verified Listings</p>
                   </div>
-                  
-                  {/* Info */}
-                  <div className="mb-3">
-                    <h3 className="text-lg font-semibold text-white">Modern Downtown Studio</h3>
-                    <p className="text-sm text-white/80"><i className="fas fa-map-marker-alt mr-1 text-blue-300"></i> 10 min from campus</p>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center text-white/80">
+                    <i className="fas fa-check-circle text-white/90 mr-2"></i>
+                    <span>Verified Property Listings</span>
                   </div>
-                  
-                  {/* Features */}
-                  <div className="flex items-center justify-between text-sm text-white/70 mb-4">
-                    <div className="flex items-center">
-                      <i className="fas fa-bed text-blue-300 mr-1"></i> 1 Bed
-                    </div>
-                    <div className="flex items-center">
-                      <i className="fas fa-bath text-blue-300 mr-1"></i> 1 Bath
-                    </div>
-                    <div className="flex items-center">
-                      <i className="fas fa-ruler-combined text-blue-300 mr-1"></i> 450 ft²
-                    </div>
+                  <div className="flex items-center text-white/80">
+                    <i className="fas fa-check-circle text-white/90 mr-2"></i>
+                    <span>Direct Communication</span>
                   </div>
-                  
-                  {/* Price and CTA */}
-                  <div className="flex justify-between items-center">
-                    <div className="text-white font-bold text-xl">
-                      $750<span className="font-normal text-sm text-white/70">/mo</span>
-                    </div>
-                    <button className="text-xs bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-full transition-colors shadow-lg flex items-center">
-                      <i className="fas fa-search-location mr-1.5"></i> View Details
-                    </button>
+                  <div className="flex items-center text-white/80">
+                    <i className="fas fa-check-circle text-white/90 mr-2"></i>
+                    <span>Secure Booking Process</span>
                   </div>
-                  
-                  {/* Animated pulse dot */}
-                  <motion.div 
-                    className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-blue-500"
-                    animate={{ 
-                      scale: [1, 1.2, 1],
-                      opacity: [0.8, 0.4, 0.8]
-                    }}
-                    transition={{ 
-                      duration: 2, 
-                      repeat: Infinity,
-                      ease: "easeInOut" 
-                    }}
-                  >
-                    <motion.div 
-                      className="absolute inset-0 w-full h-full rounded-full bg-blue-500"
-                      animate={{ 
-                        scale: [1, 2.5],
-                        opacity: [0.8, 0]
-                      }}
-                      transition={{ 
-                        duration: 2, 
-                        repeat: Infinity,
-                        ease: "easeOut" 
-                      }}
-                    />
-                  </motion.div>
                 </div>
               </div>
             </div>
           </motion.div>
         </div>
       </div>
-      
-      {/* Scroll indicator */}
-      <motion.div 
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white/70 flex flex-col items-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 0.5 }}
-      >
-        <span className="text-sm mb-2">Scroll to explore</span>
-        <motion.div 
-          className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <motion.div 
-            className="w-1.5 h-1.5 bg-white rounded-full mt-2"
-            animate={{ y: [0, 14, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </motion.div>
-      </motion.div>
     </section>
   );
 };

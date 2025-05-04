@@ -1,8 +1,45 @@
 import { useState, useEffect } from 'react';
-import { features } from '@/lib/data';
-import FeatureCard from '@/components/features/FeatureCard';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'wouter';
+
+interface Feature {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+const features: Feature[] = [
+  {
+    icon: 'fa-home',
+    title: 'Student-Friendly Housing',
+    description: 'Find housing options specifically designed for students, close to campus and with all the amenities you need.'
+  },
+  {
+    icon: 'fa-search',
+    title: 'Smart Search',
+    description: 'Our advanced search filters help you find the perfect place based on your preferences and requirements.'
+  },
+  {
+    icon: 'fa-star',
+    title: 'Verified Listings',
+    description: 'All listings are verified to ensure you get accurate information and a safe housing experience.'
+  },
+  {
+    icon: 'fa-comments',
+    title: 'Direct Communication',
+    description: 'Connect directly with property owners and managers to get your questions answered quickly.'
+  },
+  {
+    icon: 'fa-map-marker-alt',
+    title: 'Location Insights',
+    description: 'Get detailed information about the neighborhood, nearby amenities, and distance from campus.'
+  },
+  {
+    icon: 'fa-heart',
+    title: 'Save Favorites',
+    description: 'Save your favorite listings and create collections to organize your housing search.'
+  }
+];
 
 const FeaturesSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -85,7 +122,23 @@ const FeaturesSection = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
           {features.map((feature, index) => (
-            <FeatureCard key={feature.id} feature={feature} delay={index * 0.1} />
+            <motion.div
+              key={feature.title}
+              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
+                <i className={`fas ${feature.icon} text-primary-600 text-xl`}></i>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {feature.title}
+              </h3>
+              <p className="text-gray-600">
+                {feature.description}
+              </p>
+            </motion.div>
           ))}
         </div>
         

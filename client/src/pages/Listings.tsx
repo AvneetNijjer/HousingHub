@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Listing, listings } from '@/lib/data';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { Link } from 'wouter';
+import { supabase } from '@/lib/supabase';
 import ListingCard from '@/components/listings/ListingCard';
 import ListingsFilters, { ListingFilters } from '@/components/listings/ListingsFilters';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,10 +16,12 @@ import {
   DialogFooter,
   DialogHeader
 } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { Listing } from '@/lib/data';
 
 const Listings = () => {
-  const [filteredListings, setFilteredListings] = useState<Listing[]>(listings);
-  const [viewMode, setViewMode] = useState('grid');
+  const [filteredListings, setFilteredListings] = useState<Listing[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeFilters, setActiveFilters] = useState<ListingFilters>({
     priceRange: { min: '', max: '' },
     bedrooms: 'any',
@@ -51,11 +55,36 @@ const Listings = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // Fetch listings from Supabase
+  const { data: listings, isLoading, error } = useQuery<Listing[]>({
+    queryKey: ['listings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .order('createdAt', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching listings:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1
+  });
+
   // Load search history from localStorage
   useEffect(() => {
     const storedHistory = localStorage.getItem('searchHistory');
     if (storedHistory) {
-      setSearchHistory(JSON.parse(storedHistory));
+      try {
+        setSearchHistory(JSON.parse(storedHistory));
+      } catch (error) {
+        console.error('Failed to parse search history:', error);
+        localStorage.removeItem('searchHistory');
+      }
     }
   }, []);
 
@@ -86,7 +115,11 @@ const Listings = () => {
       ...searchHistory.filter(item => item !== query).slice(0, 9)
     ];
     setSearchHistory(updatedHistory);
-    localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
+    try {
+      localStorage.setItem('searchHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error('Failed to save search history:', error);
+    }
   };
 
   // Clear search history
@@ -96,102 +129,42 @@ const Listings = () => {
     setIsSearchHistoryOpen(false);
   };
 
-  // Handle search submission
-  const handleSearch = (query?: string) => {
-    const searchTerm = query || searchQuery;
-    if (!searchTerm.trim()) return;
+  // Handle search
+  const handleSearch = (query: string = searchQuery) => {
+    if (!query.trim()) return;
     
-    addToSearchHistory(searchTerm);
+    addToSearchHistory(query);
+    setSearchQuery(query);
     setShowSuggestions(false);
-
-    // Process natural language search
-    const lowercaseQuery = searchTerm.toLowerCase();
     
-    // Create new filters based on the search query
-    const newFilters = { ...activeFilters };
-    
-    // Check for bedroom count in query
-    if (lowercaseQuery.includes('1 bed') || lowercaseQuery.includes('one bed') || lowercaseQuery.includes('single bed')) {
-      newFilters.bedrooms = '1';
-    } else if (lowercaseQuery.includes('2 bed') || lowercaseQuery.includes('two bed')) {
-      newFilters.bedrooms = '2';
-    } else if (lowercaseQuery.includes('3 bed') || lowercaseQuery.includes('three bed') || lowercaseQuery.match(/\d\+ bed/)) {
-      newFilters.bedrooms = '3+';
+    // Filter listings based on search query
+    if (listings) {
+      const filtered = listings.filter(listing => 
+        listing.title.toLowerCase().includes(query.toLowerCase()) ||
+        listing.description.toLowerCase().includes(query.toLowerCase()) ||
+        (listing.address?.toLowerCase().includes(query.toLowerCase()) ?? false) ||
+        (listing.location?.toLowerCase().includes(query.toLowerCase()) ?? false)
+      );
+      setFilteredListings(filtered);
     }
-    
-    // Check for property type in query
-    if (lowercaseQuery.includes('apartment')) {
-      newFilters.housingType.apartment = true;
-    }
-    if (lowercaseQuery.includes('house')) {
-      newFilters.housingType.house = true;
-    }
-    if (lowercaseQuery.includes('dorm')) {
-      newFilters.housingType.dormitory = true;
-    }
-    if (lowercaseQuery.includes('studio')) {
-      newFilters.housingType.studio = true;
-    }
-    
-    // Check for amenities in query
-    if (lowercaseQuery.includes('wifi') || lowercaseQuery.includes('internet')) {
-      newFilters.amenities.wifi = true;
-    }
-    if (lowercaseQuery.includes('laundry') || lowercaseQuery.includes('washer')) {
-      newFilters.amenities.laundry = true;
-    }
-    if (lowercaseQuery.includes('furnished')) {
-      newFilters.amenities.furnished = true;
-      newFilters.furnished = 'furnished';
-    }
-    if (lowercaseQuery.includes('parking') || lowercaseQuery.includes('garage')) {
-      newFilters.amenities.parking = true;
-    }
-    if (lowercaseQuery.includes('pet') || lowercaseQuery.includes('dog') || lowercaseQuery.includes('cat')) {
-      newFilters.amenities.pets = true;
-    }
-    if (lowercaseQuery.includes('gym') || lowercaseQuery.includes('fitness')) {
-      newFilters.amenities.gym = true;
-    }
-    if (lowercaseQuery.includes('pool') || lowercaseQuery.includes('swimming')) {
-      newFilters.amenities.pool = true;
-    }
-    if (lowercaseQuery.includes('security') || lowercaseQuery.includes('safe')) {
-      newFilters.amenities.security = true;
-    }
-    
-    // Check for price range in query
-    const priceMatches = lowercaseQuery.match(/(\$|\bunder\b|\bup to\b|\bless than\b|\bmax\b) ?(\d+)/);
-    if (priceMatches) {
-      const priceValue = priceMatches[2];
-      if (lowercaseQuery.includes('under') || lowercaseQuery.includes('up to') || lowercaseQuery.includes('less than') || lowercaseQuery.includes('max')) {
-        newFilters.priceRange.max = priceValue;
-      } else {
-        // If just a price is mentioned, assume it's a max price
-        newFilters.priceRange.max = priceValue;
-      }
-    }
-    
-    // Check for distance in query
-    if (lowercaseQuery.includes('near campus') || lowercaseQuery.includes('close to campus')) {
-      newFilters.distanceFromCampus = 1.0;
-    }
-    
-    // Apply the filters
-    setActiveFilters(newFilters);
   };
 
   // Apply filters and sorting
   useEffect(() => {
+    if (!listings) return;
+
     let result = [...listings];
     
     // Apply price range filter
     if (activeFilters.priceRange) {
-      if (activeFilters.priceRange.min) {
-        result = result.filter(listing => listing.price >= Number(activeFilters.priceRange.min));
+      const minPrice = activeFilters.priceRange.min ? Number(activeFilters.priceRange.min) : undefined;
+      const maxPrice = activeFilters.priceRange.max ? Number(activeFilters.priceRange.max) : undefined;
+      
+      if (minPrice !== undefined && !isNaN(minPrice)) {
+        result = result.filter(listing => listing.price >= minPrice);
       }
-      if (activeFilters.priceRange.max) {
-        result = result.filter(listing => listing.price <= Number(activeFilters.priceRange.max));
+      if (maxPrice !== undefined && !isNaN(maxPrice)) {
+        result = result.filter(listing => listing.price <= maxPrice);
       }
     }
     
@@ -200,472 +173,231 @@ const Listings = () => {
       if (activeFilters.bedrooms === '3+') {
         result = result.filter(listing => listing.bedrooms >= 3);
       } else {
-        result = result.filter(listing => listing.bedrooms === Number(activeFilters.bedrooms));
+        const bedrooms = Number(activeFilters.bedrooms);
+        if (!isNaN(bedrooms)) {
+          result = result.filter(listing => listing.bedrooms === bedrooms);
+        }
       }
     }
     
     // Apply bathrooms filter
     if (activeFilters.bathrooms && activeFilters.bathrooms !== 'any') {
-      if (activeFilters.bathrooms === '3+') {
-        result = result.filter(listing => 
-          typeof listing.bathrooms === 'number' && listing.bathrooms >= 3
-        );
-      } else {
-        result = result.filter(listing => 
-          listing.bathrooms === Number(activeFilters.bathrooms) || 
-          listing.bathrooms === activeFilters.bathrooms
-        );
+      const bathrooms = Number(activeFilters.bathrooms);
+      if (!isNaN(bathrooms)) {
+        result = result.filter(listing => listing.bathrooms === bathrooms);
       }
     }
     
-    // Apply distance from campus filter
-    if (activeFilters.distanceFromCampus !== null) {
-      result = result.filter(listing => {
-        const distance = listing.distanceFromCampus 
-          ? parseFloat(listing.distanceFromCampus.replace(/[^0-9.]/g, '')) 
-          : 10; // Default to far if no distance specified
-        return distance <= (activeFilters.distanceFromCampus || 10);
-      });
+    // Apply property type filter
+    const selectedTypes = Object.entries(activeFilters.housingType)
+      .filter(([_, selected]) => selected)
+      .map(([type]) => type.toLowerCase());
+    
+    if (selectedTypes.length > 0) {
+      result = result.filter(listing => 
+        selectedTypes.includes(listing.type.toLowerCase())
+      );
     }
     
-    // Apply availability date filter
-    if (activeFilters.availabilityDate) {
-      const selectedDate = new Date(activeFilters.availabilityDate);
-      result = result.filter(listing => {
-        if (!listing.availableFrom) return true; // Include if no availability date specified
-        const availableDate = new Date(listing.availableFrom);
-        return availableDate <= selectedDate;
-      });
-    }
+    // Apply amenities filter
+    const selectedAmenities = Object.entries(activeFilters.amenities)
+      .filter(([_, selected]) => selected)
+      .map(([amenity]) => amenity.toLowerCase());
     
-    // Apply furnished status filter
-    if (activeFilters.furnished !== 'any') {
-      result = result.filter(listing => {
-        if (activeFilters.furnished === 'furnished') {
-          return listing.furnished === true;
-        } else {
-          return listing.furnished === false;
-        }
-      });
-    }
-    
-    // Apply amenities filters
-    if (activeFilters.amenities) {
-      const selectedAmenities = Object.entries(activeFilters.amenities)
-        .filter(([_, isSelected]) => isSelected)
-        .map(([amenity]) => amenity);
-      
-      if (selectedAmenities.length > 0) {
-        result = result.filter(listing => {
-          // Check if listing has at least one of the selected amenities
-          return selectedAmenities.some(amenity => {
-            // Map the filter amenity names to the actual amenity names in the listing
-            const amenityMap: Record<string, string> = {
-              'wifi': 'WiFi',
-              'laundry': 'Laundry',
-              'furnished': 'Furnished',
-              'parking': 'Parking',
-              'pets': 'Pets',
-              'gym': 'Gym',
-              'pool': 'Pool',
-              'security': 'Security System'
-            };
-            
-            return listing.amenities.includes(amenityMap[amenity]);
-          });
-        });
-      }
-    }
-    
-    // Apply housing type filters
-    if (activeFilters.housingType) {
-      const selectedTypes = Object.entries(activeFilters.housingType)
-        .filter(([_, isSelected]) => isSelected)
-        .map(([type]) => type);
-      
-      if (selectedTypes.length > 0) {
-        result = result.filter(listing => {
-          // Check if listing matches any of the selected housing types
-          return selectedTypes.some(type => {
-            // Map the filter type names to the actual types in the listing
-            const typeMap: Record<string, string> = {
-              'apartment': 'Apartment',
-              'house': 'House',
-              'dormitory': 'Dormitory',
-              'studio': 'Studio'
-            };
-            
-            return listing.type === typeMap[type];
-          });
-        });
-      }
+    if (selectedAmenities.length > 0) {
+      result = result.filter(listing => 
+        selectedAmenities.every(amenity => 
+          listing.amenities.some(a => a.toLowerCase() === amenity)
+        )
+      );
     }
     
     // Apply sorting
-    if (activeFilters.sortBy === 'price-low') {
-      result.sort((a, b) => a.price - b.price);
-    } else if (activeFilters.sortBy === 'price-high') {
-      result.sort((a, b) => b.price - a.price);
-    } else if (activeFilters.sortBy === 'newest') {
-      // Sort by availableFrom date, newest first
-      result.sort((a, b) => {
-        const dateA = a.availableFrom ? new Date(a.availableFrom).getTime() : 0;
-        const dateB = b.availableFrom ? new Date(b.availableFrom).getTime() : 0;
-        return dateB - dateA;
-      });
-    } else if (activeFilters.sortBy === 'closest') {
-      // Sort by distance to campus
-      result.sort((a, b) => {
-        const distanceA = a.distanceFromCampus 
-          ? parseFloat(a.distanceFromCampus.replace(/[^0-9.]/g, '')) 
-          : 10;
-        const distanceB = b.distanceFromCampus 
-          ? parseFloat(b.distanceFromCampus.replace(/[^0-9.]/g, '')) 
-          : 10;
-        return distanceA - distanceB;
-      });
+    switch (activeFilters.sortBy) {
+      case 'price-low':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      default:
+        // 'recommended' - no sorting needed
+        break;
     }
-    // 'recommended' doesn't need sorting as it's the default order
     
     setFilteredListings(result);
-  }, [activeFilters]);
+  }, [listings, activeFilters]);
 
-  const handleFilterChange = (filters: ListingFilters) => {
-    setActiveFilters(filters);
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Error loading listings</h2>
+          <p className="text-gray-600 mb-4">
+            {error.message === 'Supabase not configured' 
+              ? 'Please configure your Supabase environment variables in the .env file'
+              : 'Please try again later'}
+          </p>
+          {error.message === 'Supabase not configured' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-yellow-800">
+                Required environment variables:
+                <br />
+                VITE_SUPABASE_URL=your_supabase_project_url
+                <br />
+                VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+              </p>
+            </div>
+          )}
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <section className="py-32" id="listings">
+    <div className="min-h-screen bg-gray-50 pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10">
-          <motion.h2 
-            className="text-3xl md:text-4xl font-bold text-primary-800 mb-4"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Student Housing Listings
-          </motion.h2>
-          <motion.p 
-            className="text-lg text-gray-600 max-w-3xl mx-auto"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            Browse our curated selection of student-friendly housing options near top universities.
-          </motion.p>
-        </div>
-        
-        {/* Advanced Search Section */}
-        <motion.div 
-          className="mb-8 bg-white p-6 rounded-xl shadow-lg"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <div className="relative">
-            <div className="flex">
-              <div className="relative flex-grow">
-                <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input
-                  type="text"
-                  placeholder="Search for apartments, houses near campus..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearch();
-                    }
-                  }}
-                  className="pl-10 pr-4 py-3 w-full rounded-l-lg border-gray-200 focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-30"
-                />
-                {searchQuery && (
-                  <button 
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={() => setSearchQuery('')}
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                )}
-              </div>
-              <Button 
-                onClick={() => handleSearch()}
-                className="rounded-l-none rounded-r-lg px-6 bg-primary-700 hover:bg-primary-800"
-              >
-                Search
-              </Button>
-            </div>
-            
-            {/* Search Suggestions Dropdown */}
-            {showSuggestions && (
-              <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
-                {suggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
-                    onClick={() => {
-                      setSearchQuery(suggestion);
-                      handleSearch(suggestion);
-                    }}
-                  >
-                    <i className="fas fa-search text-gray-400 mr-2"></i>
-                    <span>{suggestion}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Search Bar */}
+        <div className="relative mb-8">
+          <div className="flex items-center">
+            <Input
+              type="text"
+              placeholder="Search for housing..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="w-full pr-12"
+            />
+            <Button
+              onClick={() => handleSearch()}
+              className="absolute right-2"
+            >
+              <i className="fas fa-search"></i>
+            </Button>
           </div>
           
-          <div className="flex mt-3 items-center justify-between">
-            <div className="flex flex-wrap gap-2 items-center">
-              {/* Selected filters badges */}
-              {activeFilters.bedrooms !== 'any' && (
-                <Badge variant="outline" className="bg-blue-50">
-                  {activeFilters.bedrooms === '3+' ? '3+ Beds' : `${activeFilters.bedrooms} Bed`}
-                  <button
-                    className="ml-1 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setActiveFilters({
-                        ...activeFilters,
-                        bedrooms: 'any'
-                      });
-                    }}
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                </Badge>
-              )}
-              
-              {activeFilters.bathrooms !== 'any' && (
-                <Badge variant="outline" className="bg-blue-50">
-                  {activeFilters.bathrooms === '3+' ? '3+ Baths' : `${activeFilters.bathrooms} Bath`}
-                  <button
-                    className="ml-1 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setActiveFilters({
-                        ...activeFilters,
-                        bathrooms: 'any'
-                      });
-                    }}
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                </Badge>
-              )}
-              
-              {activeFilters.priceRange.min && (
-                <Badge variant="outline" className="bg-blue-50">
-                  Min: ${activeFilters.priceRange.min}
-                  <button
-                    className="ml-1 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setActiveFilters({
-                        ...activeFilters,
-                        priceRange: {
-                          ...activeFilters.priceRange,
-                          min: ''
-                        }
-                      });
-                    }}
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                </Badge>
-              )}
-              
-              {activeFilters.priceRange.max && (
-                <Badge variant="outline" className="bg-blue-50">
-                  Max: ${activeFilters.priceRange.max}
-                  <button
-                    className="ml-1 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setActiveFilters({
-                        ...activeFilters,
-                        priceRange: {
-                          ...activeFilters.priceRange,
-                          max: ''
-                        }
-                      });
-                    }}
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                </Badge>
-              )}
-              
-              {activeFilters.distanceFromCampus !== null && (
-                <Badge variant="outline" className="bg-blue-50">
-                  Within {(activeFilters.distanceFromCampus || 0).toFixed(1)} miles of campus
-                  <button
-                    className="ml-1 text-gray-400 hover:text-gray-600"
-                    onClick={() => {
-                      setActiveFilters({
-                        ...activeFilters,
-                        distanceFromCampus: null
-                      });
-                    }}
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                </Badge>
-              )}
+          {/* Search Suggestions */}
+          {showSuggestions && (
+            <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg">
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => handleSearch(suggestion)}
+                >
+                  {suggestion}
+                </div>
+              ))}
             </div>
-            
-            <button
-              className="text-sm text-primary-700 hover:text-primary-800 hover:underline flex items-center"
-              onClick={() => setIsSearchHistoryOpen(true)}
+          )}
+        </div>
+
+        {/* Filters and View Toggle */}
+        <div className="flex justify-between items-center mb-8">
+          <ListingsFilters
+            onFilterChange={setActiveFilters}
+          />
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              onClick={() => setViewMode('grid')}
             >
-              <i className="fas fa-history mr-1"></i> Search History
-            </button>
+              <i className="fas fa-th-large"></i>
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              onClick={() => setViewMode('list')}
+            >
+              <i className="fas fa-list"></i>
+            </Button>
           </div>
-        </motion.div>
-        
+        </div>
+
+        {/* Active Filters */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {Object.entries(activeFilters.amenities)
+            .filter(([_, selected]) => selected)
+            .map(([amenity]) => (
+              <Badge
+                key={amenity}
+                variant="secondary"
+                className="cursor-pointer"
+                onClick={() => {
+                  setActiveFilters(prev => ({
+                    ...prev,
+                    amenities: {
+                      ...prev.amenities,
+                      [amenity]: false
+                    }
+                  }));
+                }}
+              >
+                {amenity} <i className="fas fa-times ml-1"></i>
+              </Badge>
+            ))}
+        </div>
+
+        {/* Listings Grid/List */}
+        <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
+          {filteredListings.map((listing, index) => (
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              index={index}
+            />
+          ))}
+        </div>
+
+        {/* No Results */}
+        {filteredListings.length === 0 && (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
+            <p className="text-gray-500">Try adjusting your filters or search criteria</p>
+          </div>
+        )}
+
         {/* Search History Dialog */}
         <Dialog open={isSearchHistoryOpen} onOpenChange={setIsSearchHistoryOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Search History</DialogTitle>
               <DialogDescription>
-                Your recent property searches
+                Your recent searches
               </DialogDescription>
             </DialogHeader>
-            
-            {searchHistory.length === 0 ? (
-              <div className="py-4 text-center text-gray-500">
-                <i className="fas fa-history text-4xl mb-2"></i>
-                <p>No search history yet</p>
-              </div>
-            ) : (
-              <div className="space-y-2 my-4">
-                {searchHistory.map((query, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between bg-gray-50 p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
-                      setSearchQuery(query);
-                      handleSearch(query);
-                      setIsSearchHistoryOpen(false);
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <i className="fas fa-search text-gray-400 mr-2"></i>
-                      <span>{query}</span>
-                    </div>
-                    <button 
-                      className="text-gray-400 hover:text-gray-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSearchHistory(searchHistory.filter((_, i) => i !== index));
-                        localStorage.setItem('searchHistory', JSON.stringify(
-                          searchHistory.filter((_, i) => i !== index)
-                        ));
-                      }}
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            
+            <div className="space-y-2">
+              {searchHistory.map((query, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+                  onClick={() => {
+                    handleSearch(query);
+                    setIsSearchHistoryOpen(false);
+                  }}
+                >
+                  <span className="text-gray-700">{query}</span>
+                  <i className="fas fa-history text-gray-400"></i>
+                </div>
+              ))}
+            </div>
             <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={clearSearchHistory}
-                disabled={searchHistory.length === 0}
-              >
+              <Button variant="outline" onClick={clearSearchHistory}>
                 Clear History
-              </Button>
-              <Button onClick={() => setIsSearchHistoryOpen(false)}>
-                Close
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
-        <div className="flex flex-col lg:flex-row">
-          {/* Filters Sidebar */}
-          <div className="lg:w-1/4 mb-8 lg:mb-0 lg:pr-8">
-            <ListingsFilters onFilterChange={handleFilterChange} />
-          </div>
-          
-          {/* Listings Grid */}
-          <div className="lg:w-3/4">
-            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-              <p className="text-gray-600 mb-4 sm:mb-0">
-                Showing <span className="font-semibold">{filteredListings.length}</span> listings
-              </p>
-              
-              <div className="flex items-center space-x-4">
-                <label className="text-sm text-gray-700">Sort by:</label>
-                <select 
-                  className="text-sm rounded-md border-gray-300 focus:border-primary-500 focus:ring focus:ring-primary-500 focus:ring-opacity-50"
-                  value={activeFilters.sortBy}
-                  onChange={(e) => setActiveFilters({
-                    ...activeFilters,
-                    sortBy: e.target.value
-                  })}
-                >
-                  <option value="recommended">Recommended</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="newest">Newest First</option>
-                  <option value="closest">Closest to Campus</option>
-                </select>
-                
-                <div className="hidden sm:flex space-x-2">
-                  <button 
-                    className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-gray-100' : 'hover:bg-gray-100'}`} 
-                    title="Grid view"
-                    onClick={() => setViewMode('grid')}
-                  >
-                    <i className={`fas fa-th-large ${viewMode === 'grid' ? 'text-primary-800' : 'text-gray-400'}`}></i>
-                  </button>
-                  <button 
-                    className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-gray-100' : 'hover:bg-gray-100'}`} 
-                    title="List view"
-                    onClick={() => setViewMode('list')}
-                  >
-                    <i className={`fas fa-list ${viewMode === 'list' ? 'text-primary-800' : 'text-gray-400'}`}></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            {filteredListings.length > 0 ? (
-              <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'} gap-6`}>
-                {filteredListings.map((listing, index) => (
-                  <ListingCard key={listing.id} listing={listing} index={index} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No listings found</h3>
-                <p className="text-gray-500">Try adjusting your filters to see more results.</p>
-              </div>
-            )}
-            
-            {filteredListings.length > 0 && (
-              <div className="mt-12 flex justify-center">
-                <nav className="inline-flex rounded-md shadow">
-                  <a href="#" className="px-4 py-2 rounded-l-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">
-                    <i className="fas fa-chevron-left"></i>
-                  </a>
-                  <a href="#" className="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-700 hover:bg-gray-50">1</a>
-                  <a href="#" className="px-4 py-2 border-t border-b border-gray-300 bg-primary-50 text-primary-800 font-medium">2</a>
-                  <a href="#" className="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-700 hover:bg-gray-50">3</a>
-                  <a href="#" className="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-700 hover:bg-gray-50">4</a>
-                  <a href="#" className="px-4 py-2 rounded-r-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">
-                    <i className="fas fa-chevron-right"></i>
-                  </a>
-                </nav>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
-    </section>
+    </div>
   );
 };
 

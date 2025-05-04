@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Listing } from '../../../shared/schema';
+import { Listing } from '@/lib/data';
 
 export function useListings() {
   const queryClient = useQueryClient();

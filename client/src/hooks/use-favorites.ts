@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import React, { createContext, useContext, ReactNode } from 'react';
+import { Listing } from '@/lib/data';
 
 interface Favorite {
   id: string;
@@ -31,7 +32,7 @@ interface FavoritesProviderProps {
   userId: string;
 }
 
-export function FavoritesProvider({ children, userId }: FavoritesProviderProps): React.ReactElement {
+export function FavoritesProvider({ children, userId }: FavoritesProviderProps) {
   const {
     favorites,
     isLoading,
@@ -136,11 +137,30 @@ export function useFavorites(userId: string) {
     },
   });
 
+  const collections = Array.from(
+    new Set(
+      favorites
+        ?.map(fav => fav.collectionName)
+        .filter((name): name is string => typeof name === 'string' && name.length > 0) ?? []
+    )
+  ).sort();
+
+  const createCollection = async (name: string) => {
+    if (!name.trim()) {
+      throw new Error('Collection name cannot be empty');
+    }
+    // Collections are just tags on favorites, so no need to create them separately
+    return Promise.resolve();
+  };
+
   const addToCollection = useMutation({
     mutationFn: async ({ listingId, collectionName }: { listingId: string; collectionName: string }) => {
+      if (!collectionName.trim()) {
+        throw new Error('Collection name cannot be empty');
+      }
       const { error } = await supabase
         .from('favorites')
-        .update({ collectionName })
+        .update({ collectionName: collectionName.trim() })
         .eq('userId', userId)
         .eq('listingId', listingId);
       
@@ -157,13 +177,6 @@ export function useFavorites(userId: string) {
 
   const getFavoriteNote = (listingId: string) => {
     return favorites?.find(fav => fav.listingId === listingId)?.note;
-  };
-
-  const collections = Array.from(new Set(favorites?.map(fav => fav.collectionName).filter(Boolean as any as (x: string | undefined) => x is string) ?? []));
-
-  const createCollection = async (name: string) => {
-    // Collections are just tags on favorites, so no need to create them separately
-    return Promise.resolve();
   };
 
   return {

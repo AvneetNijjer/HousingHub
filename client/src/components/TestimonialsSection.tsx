@@ -1,7 +1,41 @@
 import { useState, useEffect } from 'react';
-import { testimonials } from '@/lib/data';
-import TestimonialCard from '@/components/testimonials/TestimonialCard';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
+
+interface Testimonial {
+  id: string;
+  name: string;
+  role: string;
+  image: string;
+  content: string;
+  rating: number;
+}
+
+const testimonials: Testimonial[] = [
+  {
+    id: '1',
+    name: 'Sarah Johnson',
+    role: 'Computer Science Student',
+    image: '/testimonials/sarah.jpg',
+    content: 'LetMeKnock made finding my off-campus housing so much easier! The platform is intuitive and the verified listings gave me peace of mind.',
+    rating: 5
+  },
+  {
+    id: '2',
+    name: 'Michael Chen',
+    role: 'Business Major',
+    image: '/testimonials/michael.jpg',
+    content: 'As an international student, I was worried about finding housing. LetMeKnock\'s detailed listings and direct communication features were a lifesaver.',
+    rating: 5
+  },
+  {
+    id: '3',
+    name: 'Emily Rodriguez',
+    role: 'Graduate Student',
+    image: '/testimonials/emily.jpg',
+    content: 'The ability to save favorites and compare different options helped me make an informed decision. Highly recommend!',
+    rating: 5
+  }
+];
 
 const TestimonialsSection = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -129,11 +163,31 @@ const TestimonialsSection = () => {
         {/* Testimonials grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
           {testimonials.map((testimonial, index) => (
-            <TestimonialCard 
-              key={testimonial.id} 
-              testimonial={testimonial} 
-              delay={index * 0.1} 
-            />
+            <motion.div
+              key={testimonial.id}
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <div className="flex items-center mb-4">
+                <img
+                  src={testimonial.image}
+                  alt={testimonial.name}
+                  className="w-12 h-12 rounded-full object-cover mr-4"
+                />
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{testimonial.name}</h3>
+                  <p className="text-blue-200 text-sm">{testimonial.role}</p>
+                </div>
+              </div>
+              <div className="flex mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <i key={i} className="fas fa-star text-yellow-400"></i>
+                ))}
+              </div>
+              <p className="text-white/80">{testimonial.content}</p>
+            </motion.div>
           ))}
         </div>
         
