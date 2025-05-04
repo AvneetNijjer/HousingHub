@@ -1,7 +1,10 @@
 import { supabase } from './supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
+
+const typedSupabase = supabase as SupabaseClient;
 
 export const uploadImage = async (file: File, bucket: string, path: string) => {
-  const { data, error } = await supabase.storage
+  const { data, error } = await typedSupabase.storage
     .from(bucket)
     .upload(path, file, {
       cacheControl: '3600',
@@ -13,14 +16,14 @@ export const uploadImage = async (file: File, bucket: string, path: string) => {
 };
 
 export const getImageUrl = (bucket: string, path: string) => {
-  const { data } = supabase.storage
+  const { data } = typedSupabase.storage
     .from(bucket)
     .getPublicUrl(path);
   return data.publicUrl;
 };
 
 export const deleteImage = async (bucket: string, path: string) => {
-  const { error } = await supabase.storage
+  const { error } = await typedSupabase.storage
     .from(bucket)
     .remove([path]);
   

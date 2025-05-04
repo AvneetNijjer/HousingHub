@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import ListingCard from '@/components/listings/ListingCard';
 import ListingsFilters, { ListingFilters } from '@/components/listings/ListingsFilters';
@@ -16,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader
 } from '@/components/ui/dialog';
-import { toast } from 'sonner';
 import { Listing, listings as mockListings } from '@/lib/data';
 
 const Listings = () => {

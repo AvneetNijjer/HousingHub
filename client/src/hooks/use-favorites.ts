@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
 import React, { createContext, useContext, ReactNode } from 'react';
-import { Listing } from '@/lib/data';
+
+const typedSupabase = supabase as SupabaseClient;
 
 interface Favorite {
   id: string;
@@ -80,7 +82,7 @@ export function useFavorites(userId: string) {
   const { data: favorites, isLoading } = useQuery({
     queryKey: ['favorites', userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await typedSupabase
         .from('favorites')
         .select('*')
         .eq('userId', userId);
@@ -93,7 +95,7 @@ export function useFavorites(userId: string) {
 
   const addFavorite = useMutation({
     mutationFn: async (listingId: string) => {
-      const { data, error } = await supabase
+      const { data, error } = await typedSupabase
         .from('favorites')
         .insert([{ userId, listingId }])
         .select()
@@ -109,7 +111,7 @@ export function useFavorites(userId: string) {
 
   const removeFavorite = useMutation({
     mutationFn: async (listingId: string) => {
-      const { error } = await supabase
+      const { error } = await typedSupabase
         .from('favorites')
         .delete()
         .eq('userId', userId)
@@ -124,7 +126,7 @@ export function useFavorites(userId: string) {
 
   const addNoteToFavorite = useMutation({
     mutationFn: async ({ listingId, note }: { listingId: string; note: string }) => {
-      const { error } = await supabase
+      const { error } = await typedSupabase
         .from('favorites')
         .update({ note })
         .eq('userId', userId)
@@ -158,7 +160,7 @@ export function useFavorites(userId: string) {
       if (!collectionName.trim()) {
         throw new Error('Collection name cannot be empty');
       }
-      const { error } = await supabase
+      const { error } = await typedSupabase
         .from('favorites')
         .update({ collectionName: collectionName.trim() })
         .eq('userId', userId)

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useListings } from '@/hooks/use-listings';
 import { Button } from '@/components/ui/button';
@@ -9,91 +8,87 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
-import { Listing } from '@shared/schema';
+import { Listing } from '@/lib/data';
+import { uploadImage, getImageUrl } from '@/lib/storage';
+
+const propertyTypes = ['Apartment', 'House', 'Dormitory', 'Studio'] as const;
+const amenitiesList = ['WiFi', 'Laundry', 'Furnished', 'Parking', 'Pets Allowed', 'Gym', 'Pool', 'Security'];
+
+type FormData = {
+  title: string;
+  description: string;
+  price: string;
+  type: typeof propertyTypes[number];
+  bedrooms: string;
+  bathrooms: string;
+  squareFeet: string;
+  address: string;
+  location: string;
+  amenities: string[];
+  images: File[];
+  availableFrom: string;
+  leaseTerm: string;
+  petsAllowed: boolean;
+  furnished: boolean;
+  utilitiesIncluded: string;
+};
 
 interface CreateListingFormProps {
   initialData?: Partial<Listing>;
   mode?: 'create' | 'edit';
 }
 
-interface FormData {
-  title: string;
-  description: string;
-  price: string;
-  propertyType: 'apartment' | 'house' | 'condo' | 'townhouse';
-  bedrooms: string;
-  bathrooms: string;
-  squareFeet: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-}
-
 const CreateListingForm = ({ initialData, mode = 'create' }: CreateListingFormProps) => {
-  const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const { createListing, updateListing } = useListings();
-  const [loading, setLoading] = useState(false);
-  const [images, setImages] = useState<string[]>(initialData?.images || []);
-  const [amenities, setAmenities] = useState<string[]>(initialData?.amenities || []);
-
-  const [formData, setFormData] = useState<FormData>({
+  const [form, setForm] = useState<FormData>({
     title: initialData?.title || '',
     description: initialData?.description || '',
     price: initialData?.price?.toString() || '',
-    propertyType: initialData?.propertyType || 'apartment',
+    type: (initialData?.type as typeof propertyTypes[number]) || 'Apartment',
     bedrooms: initialData?.bedrooms?.toString() || '',
     bathrooms: initialData?.bathrooms?.toString() || '',
     squareFeet: initialData?.squareFeet?.toString() || '',
     address: initialData?.address || '',
-    city: initialData?.city || '',
-    state: initialData?.state || '',
-    zipCode: initialData?.zipCode || '',
+    location: initialData?.location || '',
+    amenities: initialData?.amenities || [],
+    images: [],
+    availableFrom: initialData?.availableFrom || '',
+    leaseTerm: initialData?.leaseTerm || '',
+    petsAllowed: initialData?.petsAllowed || false,
+    furnished: initialData?.furnished || false,
+    utilitiesIncluded: initialData?.utilitiesIncluded?.join(', ') || '',
   });
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setForm(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
+    }
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleAmenityChange = (amenity: string) => {
+    setForm(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenity)
+        ? prev.amenities.filter(a => a !== amenity)
+        : [...prev.amenities, amenity]
+    }));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !user) return;
-
-    setLoading(true);
-    try {
-      const uploadedUrls = await Promise.all(
-        Array.from(files).map(async (file) => {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Math.random()}.${fileExt}`;
-          const filePath = `${user.id}/${fileName}`;
-
-          const { error: uploadError, data } = await supabase.storage
-            .from('listings')
-            .upload(filePath, file);
-
-          if (uploadError) throw uploadError;
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('listings')
-            .getPublicUrl(filePath);
-
-          return publicUrl;
-        })
-      );
-      setImages(prev => [...prev, ...uploadedUrls]);
-      toast.success('Images uploaded successfully');
-    } catch (error) {
-      toast.error('Failed to upload images');
-      console.error('Upload error:', error);
-    } finally {
-      setLoading(false);
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setForm(prev => ({ ...prev, images: files }));
+      setImagePreviews(files.map(file => URL.createObjectURL(file)));
     }
   };
 
@@ -105,8 +100,8 @@ const CreateListingForm = ({ initialData, mode = 'create' }: CreateListingFormPr
     }
 
     // Validate required fields
-    const requiredFields = ['title', 'price', 'propertyType', 'bedrooms', 'bathrooms', 'address', 'city', 'state', 'zipCode'];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof FormData]);
+    const requiredFields = ['title', 'price', 'type', 'bedrooms', 'bathrooms', 'address', 'location'];
+    const missingFields = requiredFields.filter(field => !form[field as keyof FormData]);
     
     if (missingFields.length > 0) {
       toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
@@ -116,7 +111,7 @@ const CreateListingForm = ({ initialData, mode = 'create' }: CreateListingFormPr
     // Validate numeric fields
     const numericFields = ['price', 'bedrooms', 'bathrooms', 'squareFeet'];
     const invalidFields = numericFields.filter(field => {
-      const value = formData[field as keyof FormData];
+      const value = form[field as keyof FormData];
       return value && isNaN(Number(value));
     });
 
@@ -126,242 +121,164 @@ const CreateListingForm = ({ initialData, mode = 'create' }: CreateListingFormPr
     }
 
     setLoading(true);
+    setError(null);
     try {
+      // Upload images to Supabase Storage
+      let imageUrls: string[] = [];
+      if (form.images.length > 0) {
+        for (const file of form.images) {
+          const path = `public/${user?.id}/${Date.now()}-${file.name}`;
+          await uploadImage(file, 'listing-images', path);
+          const publicUrl = getImageUrl('listing-images', path);
+          imageUrls.push(publicUrl);
+        }
+      }
+
+      // Insert listing into Supabase
       const listingData = {
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        propertyType: formData.propertyType,
-        bedrooms: parseInt(formData.bedrooms),
-        bathrooms: parseFloat(formData.bathrooms),
-        squareFeet: formData.squareFeet ? parseInt(formData.squareFeet) : undefined,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        zipCode: formData.zipCode,
-        amenities,
-        images,
-        isAvailable: true,
-        userId: user.id,
+        title: form.title,
+        description: form.description,
+        price: parseFloat(form.price),
+        type: form.type,
+        bedrooms: parseInt(form.bedrooms),
+        bathrooms: parseFloat(form.bathrooms),
+        squareFeet: form.squareFeet ? parseInt(form.squareFeet) : 0,
+        address: form.address,
+        location: form.location,
+        amenities: form.amenities,
+        imageUrl: imageUrls[0] || initialData?.imageUrl || '',
+        additionalImages: imageUrls.length > 0 ? imageUrls.slice(1) : initialData?.additionalImages || [],
+        availableFrom: form.availableFrom || undefined,
+        leaseTerm: form.leaseTerm || undefined,
+        petsAllowed: form.petsAllowed,
+        furnished: form.furnished,
+        utilitiesIncluded: form.utilitiesIncluded ? form.utilitiesIncluded.split(',').map(s => s.trim()) : [],
+        user_id: user?.id,
       } satisfies Omit<Listing, 'id' | 'createdAt' | 'updatedAt'>;
 
-      if (mode === 'create') {
-        await createListing.mutateAsync(listingData);
-        toast.success('Listing created successfully');
-      } else if (initialData?.id) {
+      if (mode === 'edit' && initialData?.id) {
         await updateListing.mutateAsync({ id: initialData.id, ...listingData });
         toast.success('Listing updated successfully');
       } else {
-        throw new Error('No listing ID provided for update');
+        await createListing.mutateAsync(listingData);
+        toast.success('Listing created successfully');
       }
       setLocation('/profile/my-listings');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save listing');
-      console.error('Submit error:', error);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create listing');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="container mx-auto px-4 py-8">
+      <form className="space-y-6 bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto mt-8" onSubmit={handleSubmit}>
+        <h2 className="text-2xl font-bold mb-4">Create a New Listing</h2>
+        {error && <div className="text-red-600 text-sm">{error}</div>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <Input name="title" value={form.title} onChange={handleChange} required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price per month</label>
+            <Input name="price" type="number" value={form.price} onChange={handleChange} required min="0" step="0.01" placeholder="850" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+            <Select
+              value={form.type}
+              onValueChange={(value: typeof propertyTypes[number]) => setForm(prev => ({ ...prev, type: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select property type" />
+              </SelectTrigger>
+              <SelectContent>
+                {propertyTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
+            <Input name="bedrooms" type="number" value={form.bedrooms} onChange={handleChange} required min="1" placeholder="2" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
+            <Input name="bathrooms" type="number" value={form.bathrooms} onChange={handleChange} required min="0.5" step="0.5" placeholder="1.5" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Square Feet</label>
+            <Input name="squareFeet" type="number" value={form.squareFeet} onChange={handleChange} min="0" placeholder="750" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <Input name="address" value={form.address} onChange={handleChange} required placeholder="123 University Ave" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <Input name="location" value={form.location} onChange={handleChange} required placeholder="College Town" />
+          </div>
+        </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-          <Input
-            name="title"
-            value={formData.title}
-            onChange={handleInputChange}
-            required
-            placeholder="Modern Campus View Apartment"
-          />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <Textarea name="description" value={form.description} onChange={handleChange} required rows={4} placeholder="Describe your property..." />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Price per month</label>
-          <Input
-            name="price"
-            type="number"
-            value={formData.price}
-            onChange={handleInputChange}
-            required
-            min="0"
-            step="0.01"
-            placeholder="850"
-          />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
+          <input type="file" accept="image/*" multiple onChange={handleImageChange} />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+            {imagePreviews.map((url, idx) => (
+              <img key={idx} src={url} alt={`Preview ${idx + 1}`} className="rounded-lg object-cover w-full h-32" />
+            ))}
+          </div>
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
-          <Select
-            value={formData.propertyType}
-            onValueChange={(value) => handleSelectChange('propertyType', value as FormData['propertyType'])}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select property type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="apartment">Apartment</SelectItem>
-              <SelectItem value="house">House</SelectItem>
-              <SelectItem value="condo">Condo</SelectItem>
-              <SelectItem value="townhouse">Townhouse</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
-          <Input
-            name="bedrooms"
-            type="number"
-            value={formData.bedrooms}
-            onChange={handleInputChange}
-            required
-            min="1"
-            placeholder="2"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
-          <Input
-            name="bathrooms"
-            type="number"
-            value={formData.bathrooms}
-            onChange={handleInputChange}
-            required
-            min="0.5"
-            step="0.5"
-            placeholder="1.5"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Square Feet</label>
-          <Input
-            name="squareFeet"
-            type="number"
-            value={formData.squareFeet}
-            onChange={handleInputChange}
-            min="0"
-            placeholder="750"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-          <Input
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            required
-            placeholder="123 University Ave"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-          <Input
-            name="city"
-            value={formData.city}
-            onChange={handleInputChange}
-            required
-            placeholder="College Town"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-          <Input
-            name="state"
-            value={formData.state}
-            onChange={handleInputChange}
-            required
-            placeholder="ST"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
-          <Input
-            name="zipCode"
-            value={formData.zipCode}
-            onChange={handleInputChange}
-            required
-            placeholder="12345"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <Textarea
-          name="description"
-          value={formData.description}
-          onChange={handleInputChange}
-          required
-          placeholder="Describe your property..."
-          rows={4}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
-        <Input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleImageUpload}
-          className="mb-2"
-        />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {images.map((url, index) => (
-            <div key={index} className="relative aspect-square">
-              <img
-                src={url}
-                alt={`Listing image ${index + 1}`}
-                className="w-full h-full object-cover rounded-lg"
-              />
-              <button
-                type="button"
-                onClick={() => setImages(prev => prev.filter((_, i) => i !== index))}
-                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Amenities</label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {['WiFi', 'Laundry', 'Parking', 'Furnished', 'Pets Allowed', 'Gym', 'Pool', 'Security'].map((amenity) => (
-            <div key={amenity} className="flex items-center space-x-2">
-              <Checkbox
-                id={amenity}
-                checked={amenities.includes(amenity)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setAmenities(prev => [...prev, amenity]);
-                  } else {
-                    setAmenities(prev => prev.filter(a => a !== amenity));
-                  }
-                }}
-              />
-              <label htmlFor={amenity} className="text-sm text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Amenities</label>
+          <div className="flex flex-wrap gap-2">
+            {amenitiesList.map(amenity => (
+              <label key={amenity} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={form.amenities.includes(amenity)}
+                  onChange={() => handleAmenityChange(amenity)}
+                />
                 {amenity}
               </label>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-
-      <Button type="submit" disabled={loading}>
-        {loading ? 'Saving...' : mode === 'create' ? 'Create Listing' : 'Update Listing'}
-      </Button>
-    </form>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Available From</label>
+            <Input name="availableFrom" type="date" value={form.availableFrom} onChange={handleChange} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Lease Term</label>
+            <Input name="leaseTerm" value={form.leaseTerm} onChange={handleChange} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Pets Allowed</label>
+            <Checkbox checked={form.petsAllowed} onCheckedChange={checked => setForm(prev => ({ ...prev, petsAllowed: !!checked }))} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Furnished</label>
+            <Checkbox checked={form.furnished} onCheckedChange={checked => setForm(prev => ({ ...prev, furnished: !!checked }))} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Utilities Included (comma separated)</label>
+          <Input name="utilitiesIncluded" value={form.utilitiesIncluded} onChange={handleChange} />
+        </div>
+        <Button type="submit" disabled={loading} className="w-full mt-4">
+          {loading ? 'Creating...' : 'Create Listing'}
+        </Button>
+      </form>
+    </div>
   );
 };
 

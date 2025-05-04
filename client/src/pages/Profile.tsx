@@ -41,18 +41,14 @@ const Profile = () => {
     collections,
     removeFavorite,
     createCollection,
-    addToCollection,
     getFavoriteNote
   } = useFavoritesContext();
   
   // New: useUserProfile hook
   const {
     profile,
-    loading: profileLoading,
-    error: profileError,
     updateProfile,
     uploadProfileImage,
-    setProfile
   } = useUserProfile(user?.id);
 
   // Editable state for name and preferences
@@ -69,7 +65,6 @@ const Profile = () => {
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
-  const [editSuccess, setEditSuccess] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -89,7 +84,8 @@ const Profile = () => {
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
-      setEditForm(prev => ({ ...prev, [name]: e.target.checked }));
+      const checked = e.target.checked;
+      setEditForm(prev => ({ ...prev, [name]: checked }));
     } else {
       setEditForm(prev => ({ ...prev, [name]: value }));
     }
@@ -104,11 +100,10 @@ const Profile = () => {
   const handleEditSave = async () => {
     setEditLoading(true);
     setEditError(null);
-    setEditSuccess(false);
     try {
       let profile_image = editForm.profile_image;
       if (editForm.imageFile) {
-        profile_image = await uploadProfileImage(editForm.imageFile);
+        profile_image = String(await uploadProfileImage(editForm.imageFile) || '');
       }
       await updateProfile({
         name: editForm.name,
@@ -121,7 +116,6 @@ const Profile = () => {
           roommates: editForm.roommates,
         }
       });
-      setEditSuccess(true);
       setEditModalOpen(false);
     } catch (err: any) {
       setEditError(err.message || 'Failed to update profile');
@@ -438,7 +432,7 @@ const Profile = () => {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Housing Type</p>
-                      <p className="font-medium">{editForm.housingType}</p>
+                      <p className="font-medium">{editForm.housingType || ''}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Bedrooms</p>
@@ -517,7 +511,7 @@ const Profile = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Housing Type(s) (comma separated)</label>
-              <Input name="housingType" value={editForm.housingType} onChange={handleEditChange} />
+              <Input name="housingType" value={editForm.housingType || ''} onChange={handleEditChange} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>

@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useRoute, Link } from 'wouter';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { listings, landlords } from '@/lib/data';
 
 const ListingDetail = () => {
-  const [match, params] = useRoute('/listings/:id');
+  const [, params] = useRoute('/listings/:id');
   const [listing, setListing] = useState<any>(null);
   const [landlord, setLandlord] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +13,7 @@ const ListingDetail = () => {
   const [activeImage, setActiveImage] = useState(0);
 
   // Tabs
-  const [activeTab, setActiveTab] = useState('overview');
+  const [, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (params && params.id) {
@@ -27,8 +26,8 @@ const ListingDetail = () => {
       if (foundListing) {
         setListing(foundListing);
         // If the listing has a landlord, find them
-        if (foundListing.landlordId) {
-          const foundLandlord = landlords.find(l => l.id === foundListing.landlordId);
+        if (foundListing.user_id) {
+          const foundLandlord = landlords.find(l => l.id === foundListing.user_id);
           setLandlord(foundLandlord || null);
         }
         setIsFavorite(foundListing.favorite || false);
@@ -173,7 +172,7 @@ const ListingDetail = () => {
                     <img src={listing.imageUrl} alt="Main" className="w-full h-full object-cover" />
                   </div>
                   
-                  {listing.additionalImages.map((img, index) => (
+                  {listing.additionalImages.map((img: string, index: number) => (
                     <div 
                       key={index}
                       onClick={() => setActiveImage(index)}
@@ -291,7 +290,7 @@ const ListingDetail = () => {
                     <div className="mt-8">
                       <h3 className="text-lg font-medium text-gray-900 mb-3">Utilities Included</h3>
                       <div className="flex flex-wrap gap-2">
-                        {listing.utilitiesIncluded.map((utility, index) => (
+                        {listing.utilitiesIncluded.map((utility: string, index: number) => (
                           <span key={index} className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
                             <i className="fas fa-check mr-1"></i> {utility}
                           </span>
@@ -306,7 +305,7 @@ const ListingDetail = () => {
                   
                   {listing.amenities && listing.amenities.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {listing.amenities.map((amenity, index) => (
+                      {listing.amenities.map((amenity: string, index: number) => (
                         <div key={index} className="flex items-center">
                           <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center mr-3">
                             <i className="fas fa-check text-primary-600"></i>
@@ -347,7 +346,7 @@ const ListingDetail = () => {
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 mb-3">What's Nearby</h3>
                       <ul className="space-y-2">
-                        {listing.nearbyPlaces.map((place, index) => (
+                        {listing.nearbyPlaces.map((place: string, index: number) => (
                           <li key={index} className="flex items-start">
                             <i className="fas fa-location-dot mt-1 mr-2 text-primary-600"></i>
                             <span className="text-gray-700">{place}</span>

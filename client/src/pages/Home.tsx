@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import HeroSection from "@/components/HeroSection";
 import SearchFilters from "@/components/SearchFilters";
 import FeaturesSection from "@/components/FeaturesSection";

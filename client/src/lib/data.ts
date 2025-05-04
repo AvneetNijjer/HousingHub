@@ -32,7 +32,9 @@ export interface Listing {
   nearbyPlaces?: string[];
   distanceFromCampus?: string;
   utilitiesIncluded?: string[];
-  landlordId?: string;
+  user_id: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Testimonial {
@@ -204,7 +206,9 @@ export const listings: Listing[] = [
     nearbyPlaces: ['State University Library', 'College Café', 'Campus Bookstore', 'University Health Center'],
     distanceFromCampus: '0.2 miles',
     utilitiesIncluded: ['Water', 'Internet', 'Trash', 'Electricity'],
-    landlordId: 'landlord1'
+    user_id: 'landlord1',
+    createdAt: '2023-07-01T10:00:00',
+    updatedAt: '2023-07-01T10:00:00'
   },
   {
     id: '2',
@@ -232,7 +236,9 @@ export const listings: Listing[] = [
     nearbyPlaces: ['Campus Main Gate', 'Student Union', 'University Recreation Center', 'College Town Grocery'],
     distanceFromCampus: '0.3 miles',
     utilitiesIncluded: ['Water', 'Trash'],
-    landlordId: 'landlord2'
+    user_id: 'landlord2',
+    createdAt: '2023-07-01T10:00:00',
+    updatedAt: '2023-07-01T10:00:00'
   },
   {
     id: '3',
@@ -245,7 +251,10 @@ export const listings: Listing[] = [
     squareFeet: 450,
     amenities: ['WiFi', 'Furnished', 'Gym'],
     imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    location: 'Downtown'
+    location: 'Downtown',
+    user_id: 'landlord3',
+    createdAt: '2023-07-01T10:00:00',
+    updatedAt: '2023-07-01T10:00:00'
   },
   {
     id: '4',
@@ -258,7 +267,10 @@ export const listings: Listing[] = [
     squareFeet: 300,
     amenities: ['WiFi', 'Meal Plan', 'Laundry'],
     imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    location: 'On Campus'
+    location: 'On Campus',
+    user_id: 'landlord4',
+    createdAt: '2023-07-01T10:00:00',
+    updatedAt: '2023-07-01T10:00:00'
   },
   {
     id: '5',
@@ -271,7 +283,10 @@ export const listings: Listing[] = [
     squareFeet: 850,
     amenities: ['WiFi', 'Pool', 'Gym'],
     imageUrl: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    location: 'City Park Area'
+    location: 'City Park Area',
+    user_id: 'landlord1',
+    createdAt: '2023-07-01T10:00:00',
+    updatedAt: '2023-07-01T10:00:00'
   },
   {
     id: '6',
@@ -284,7 +299,10 @@ export const listings: Listing[] = [
     squareFeet: 1800,
     amenities: ['Parking', 'Laundry', 'Backyard'],
     imageUrl: 'https://images.unsplash.com/photo-1556912173-46c336c7fd55?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    location: 'College District'
+    location: 'College District',
+    user_id: 'landlord2',
+    createdAt: '2023-07-01T10:00:00',
+    updatedAt: '2023-07-01T10:00:00'
   },
   {
     id: '7',
@@ -297,7 +315,10 @@ export const listings: Listing[] = [
     squareFeet: 900,
     amenities: ['WiFi', 'Gym', 'Security'],
     imageUrl: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    location: 'University District'
+    location: 'University District',
+    user_id: 'landlord3',
+    createdAt: '2023-07-01T10:00:00',
+    updatedAt: '2023-07-01T10:00:00'
   },
   {
     id: '8',
@@ -310,7 +331,10 @@ export const listings: Listing[] = [
     squareFeet: 400,
     amenities: ['WiFi', 'Furnished', 'Utilities Included'],
     imageUrl: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    location: 'Campus Edge'
+    location: 'Campus Edge',
+    user_id: 'landlord4',
+    createdAt: '2023-07-01T10:00:00',
+    updatedAt: '2023-07-01T10:00:00'
   }
 ];
 

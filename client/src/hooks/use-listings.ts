@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { Listing } from '@/lib/data';
+
+const typedSupabase = supabase as SupabaseClient;
 
 export function useListings() {
   const queryClient = useQueryClient();
@@ -8,7 +11,7 @@ export function useListings() {
   const { data: listings, isLoading } = useQuery({
     queryKey: ['listings'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await typedSupabase
         .from('listings')
         .select('*')
         .order('createdAt', { ascending: false });
@@ -20,7 +23,7 @@ export function useListings() {
 
   const createListing = useMutation({
     mutationFn: async (newListing: Omit<Listing, 'id' | 'createdAt' | 'updatedAt'>) => {
-      const { data, error } = await supabase
+      const { data, error } = await typedSupabase
         .from('listings')
         .insert([newListing])
         .select()
@@ -36,7 +39,7 @@ export function useListings() {
 
   const updateListing = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Listing> & { id: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await typedSupabase
         .from('listings')
         .update(updates)
         .eq('id', id)
@@ -53,7 +56,7 @@ export function useListings() {
 
   const deleteListing = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await typedSupabase
         .from('listings')
         .delete()
         .eq('id', id);

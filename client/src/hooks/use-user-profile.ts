@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { uploadImage, getImageUrl } from '@/lib/storage';
+
+const typedSupabase = supabase as SupabaseClient;
 
 export interface UserProfile {
   id: string;
@@ -24,7 +27,7 @@ export function useUserProfile(userId: string | undefined) {
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    supabase
+    typedSupabase
       .from('users')
       .select('*')
       .eq('id', userId)
@@ -39,7 +42,7 @@ export function useUserProfile(userId: string | undefined) {
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!userId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('users')
       .update(updates)
       .eq('id', userId)

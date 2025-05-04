@@ -48,7 +48,7 @@ const EditListing = () => {
     return null;
   }
 
-  if (listing.userId !== user.id) {
+  if (listing.user_id !== user.id) {
     toast.error('You do not have permission to edit this listing');
     setLocation('/profile/my-listings');
     return null;

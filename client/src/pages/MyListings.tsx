@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Listing } from '@shared/schema';
 
 const MyListings = () => {
   const { user } = useAuth();
@@ -18,7 +17,7 @@ const MyListings = () => {
 
   // Filter listings by user and search query
   const myListings = listings?.filter(listing => 
-    listing.userId === user?.id &&
+    listing.user_id === user?.id &&
     (searchQuery
       ? listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         listing.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -27,8 +26,8 @@ const MyListings = () => {
 
   // Sort listings
   const sortedListings = [...myListings].sort((a, b) => {
-    const aDate = new Date(a.createdAt).getTime();
-    const bDate = new Date(b.createdAt).getTime();
+    const aDate = new Date(String(a.createdAt || '1970-01-01')).getTime();
+    const bDate = new Date(String(b.createdAt || '1970-01-01')).getTime();
 
     switch (sortBy) {
       case 'price-low':
@@ -136,11 +135,13 @@ const MyListings = () => {
               className="bg-white rounded-lg shadow-md overflow-hidden"
             >
               <div className="relative">
-                <img 
-                  src={listing.images[0]} 
-                  alt={listing.title}
-                  className="w-full h-48 object-cover"
-                />
+                {listing.imageUrl && (
+                  <img 
+                    src={listing.imageUrl} 
+                    alt={listing.title}
+                    className="w-full h-48 object-cover"
+                  />
+                )}
                 <div className="absolute top-4 right-4 flex gap-2">
                   <Link href={`/edit-listing/${listing.id}`}>
                     <Button variant="outline" size="sm">
@@ -157,7 +158,7 @@ const MyListings = () => {
                 </div>
                 <div className="absolute bottom-4 left-4">
                   <span className="px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
-                    {listing.propertyType}
+                    {listing.type}
                   </span>
                 </div>
               </div>
@@ -203,7 +204,7 @@ const MyListings = () => {
                     <Button variant="outline">View Details</Button>
                   </Link>
                   <span className="text-sm text-gray-500">
-                    Posted {new Date(listing.createdAt).toLocaleDateString()}
+                    Posted {new Date(String(listing.createdAt || '1970-01-01')).toLocaleDateString()}
                   </span>
                 </div>
               </div>

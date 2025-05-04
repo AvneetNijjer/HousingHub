@@ -10,12 +10,11 @@ interface NavBarProps {
 }
 
 const NavBar: React.FC<NavBarProps> = ({ scrollY }) => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   
   // Calculate blur intensity based on scroll
@@ -88,7 +87,7 @@ const NavBar: React.FC<NavBarProps> = ({ scrollY }) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-        setProfileMenuOpen(false);
+        setMobileMenuOpen(false);
       }
     };
 
