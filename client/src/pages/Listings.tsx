@@ -17,7 +17,7 @@ import {
   DialogHeader
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Listing } from '@/lib/data';
+import { Listing, listings as mockListings } from '@/lib/data';
 
 const Listings = () => {
   const [filteredListings, setFilteredListings] = useState<Listing[]>([]);
@@ -55,7 +55,7 @@ const Listings = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Fetch listings from Supabase
+  // Fetch listings from Supabase or fallback to mock data
   const { data: listings, isLoading, error } = useQuery<Listing[]>({
     queryKey: ['listings'],
     queryFn: async () => {
@@ -63,13 +63,11 @@ const Listings = () => {
         .from('listings')
         .select('*')
         .order('createdAt', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching listings:', error);
-        throw error;
+      if (error || !data) {
+        // Fallback to mock data if Supabase is not configured or returns error
+        return mockListings;
       }
-
-      return data || [];
+      return data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1
@@ -266,105 +264,103 @@ const Listings = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Search Bar */}
-        <div className="relative mb-8">
-          <div className="flex items-center">
-            <Input
-              type="text"
-              placeholder="Search for housing..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pr-12"
-            />
-            <Button
-              onClick={() => handleSearch()}
-              className="absolute right-2"
-            >
-              <i className="fas fa-search"></i>
-            </Button>
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Filters Sidebar */}
+          <div className="w-full md:w-1/3 md:max-w-sm">
+            <ListingsFilters onFilterChange={setActiveFilters} />
           </div>
-          
-          {/* Search Suggestions */}
-          {showSuggestions && (
-            <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg">
-              {suggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleSearch(suggestion)}
+          {/* Listings Content */}
+          <div className="flex-1">
+            {/* Search Bar */}
+            <div className="relative mb-8">
+              <div className="flex items-center">
+                <Input
+                  type="text"
+                  placeholder="Search for housing..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="w-full pr-12"
+                />
+                <Button
+                  onClick={() => handleSearch()}
+                  className="absolute right-2"
                 >
-                  {suggestion}
+                  <i className="fas fa-search"></i>
+                </Button>
+              </div>
+              {/* Search Suggestions */}
+              {showSuggestions && (
+                <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg">
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleSearch(suggestion)}
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
+            {/* View Toggle */}
+            <div className="flex items-center space-x-2 mb-8">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                onClick={() => setViewMode('grid')}
+              >
+                <i className="fas fa-th-large"></i>
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                onClick={() => setViewMode('list')}
+              >
+                <i className="fas fa-list"></i>
+              </Button>
+            </div>
+            {/* Active Filters */}
+            <div className="flex flex-wrap gap-2 mb-8">
+              {Object.entries(activeFilters.amenities)
+                .filter(([_, selected]) => selected)
+                .map(([amenity]) => (
+                  <Badge
+                    key={amenity}
+                    variant="secondary"
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setActiveFilters(prev => ({
+                        ...prev,
+                        amenities: {
+                          ...prev.amenities,
+                          [amenity]: false
+                        }
+                      }));
+                    }}
+                  >
+                    {amenity} <i className="fas fa-times ml-1"></i>
+                  </Badge>
+                ))}
+            </div>
+            {/* Listings Grid/List */}
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6' : 'space-y-6'}>
+              {filteredListings.map((listing, index) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  index={index}
+                />
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Filters and View Toggle */}
-        <div className="flex justify-between items-center mb-8">
-          <ListingsFilters
-            onFilterChange={setActiveFilters}
-          />
-          <div className="flex items-center space-x-2">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'outline'}
-              onClick={() => setViewMode('grid')}
-            >
-              <i className="fas fa-th-large"></i>
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              onClick={() => setViewMode('list')}
-            >
-              <i className="fas fa-list"></i>
-            </Button>
+            {/* No Results */}
+            {filteredListings.length === 0 && (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
+                <p className="text-gray-500">Try adjusting your filters or search criteria</p>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Active Filters */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {Object.entries(activeFilters.amenities)
-            .filter(([_, selected]) => selected)
-            .map(([amenity]) => (
-              <Badge
-                key={amenity}
-                variant="secondary"
-                className="cursor-pointer"
-                onClick={() => {
-                  setActiveFilters(prev => ({
-                    ...prev,
-                    amenities: {
-                      ...prev.amenities,
-                      [amenity]: false
-                    }
-                  }));
-                }}
-              >
-                {amenity} <i className="fas fa-times ml-1"></i>
-              </Badge>
-            ))}
-        </div>
-
-        {/* Listings Grid/List */}
-        <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}>
-          {filteredListings.map((listing, index) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              index={index}
-            />
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredListings.length === 0 && (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
-            <p className="text-gray-500">Try adjusting your filters or search criteria</p>
-          </div>
-        )}
-
         {/* Search History Dialog */}
         <Dialog open={isSearchHistoryOpen} onOpenChange={setIsSearchHistoryOpen}>
           <DialogContent>

@@ -121,7 +121,7 @@ const NavBar: React.FC<NavBarProps> = ({ scrollY }) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center">
       <motion.nav 
-        className="transition-all duration-500 overflow-hidden mx-8 lg:mx-16 my-4 rounded-full max-w-4xl mx-auto w-[calc(100%+1px)]"
+        className="transition-all duration-500 overflow-hidden mx-8 lg:mx-16 my-4 rounded-full max-w-5xl mx-auto w-[calc(100%+1px)]"
         style={{
           backdropFilter: getBlurIntensity()
         }}
@@ -141,7 +141,7 @@ const NavBar: React.FC<NavBarProps> = ({ scrollY }) => {
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-purple-500 rounded-full opacity-10 blur-3xl"></div>
         </div>
         
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-2 lg:px-4">
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-2 lg:px-4">
           <div className="flex justify-between h-16 items-center">
             {/* Logo */}
             <motion.div 

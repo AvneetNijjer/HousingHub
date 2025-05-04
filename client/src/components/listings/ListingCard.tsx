@@ -136,9 +136,9 @@ const ListingCard = ({ listing, index }: ListingCardProps) => {
     >
       <div className="relative">
         <img 
-          src={listing.imageUrl || (listing.additionalImages && listing.additionalImages[0]) || ''} 
+          src={listing.imageUrl}
           alt={listing.title}
-          className="w-full h-48 object-cover"
+          className="w-full h-48 object-cover rounded-lg"
         />
         <div className="absolute top-4 right-4 flex gap-2">
           <button
@@ -259,27 +259,19 @@ const ListingCard = ({ listing, index }: ListingCardProps) => {
 
             <TabsContent value="images">
               <div className="grid grid-cols-2 gap-4">
-                {listing.images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`${listing.title} - Image ${index + 1}`}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                ))}
+                {Array.isArray(listing.additionalImages) && listing.additionalImages.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {listing.additionalImages.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`Additional ${index + 1}`}
+                        className="rounded-lg object-cover w-full h-32"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-              {Array.isArray(listing.additionalImages) && listing.additionalImages.length > 0 && (
-                <div className="grid grid-cols-2 gap-2 mt-4">
-                  {listing.additionalImages.map((image: string, index: number) => (
-                    <img
-                      key={index}
-                      src={image}
-                      alt={`Additional ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
-                    />
-                  ))}
-                </div>
-              )}
             </TabsContent>
 
             <TabsContent value="notes" className="space-y-4">
